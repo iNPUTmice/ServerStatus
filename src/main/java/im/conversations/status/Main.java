@@ -35,6 +35,7 @@ public class Main {
             "jabbim.com",
             "jabber.org",
             "home.zom.im",
+            "muc.xmpp.org",
             "draugr.de",
             "jabber.hot-chilli.net",
             "riseup.net",
@@ -47,21 +48,31 @@ public class Main {
         ipAddress("127.0.0.1");
         port(4567);
         final TemplateEngine templateEngine = new FreeMarkerEngine();
+        before((request, response) -> {
+            if (!request.pathInfo().endsWith("/")) {
+                response.redirect(request.pathInfo()+"/");
+            }
+        });
         get("/",getStatus,templateEngine);
         get("/:domain/",getStatus,templateEngine);
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(Math.max(Credentials.LIST.size(),5));
         for(Credentials credentials : Credentials.LIST) {
-            scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, SERVERS), 0, 5, TimeUnit.MINUTES);
+            scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, SERVERS), 0, 2, TimeUnit.MINUTES);
         }
     }
 
     private static TemplateViewRoute getStatus = (request, response) -> {
         if (Credentials.LIST.size() == 0) {
             halt(500,"You have to configure at least on server");
-            return null;
+            response.redirect("/");
+            return new ModelAndView(null,"redirect.ftl");
         }
-        String param = request.params("domain");
-        String domain = param == null ? Credentials.LIST.get(0).getJid().getDomain() : Jid.ofDomain(param).getDomain();
+        final String param = request.params("domain");
+        final String domain = param == null ? Credentials.LIST.get(0).getJid().getDomain() : Jid.ofDomain(param).getDomain();
+        if (param != null && Credentials.LIST.get(0).getJid().getDomain().equals(domain)) {
+            response.redirect("/");
+            return new ModelAndView(null,"redirect.ftl");
+        }
         ServerStatus serverStatus = ServerStatusStore.INSTANCE.get(domain);
         HashMap<String,Object> model = new HashMap<>();
         model.put("domain",domain);
@@ -73,5 +84,4 @@ public class Main {
         }
         return new ModelAndView(model,"status.ftl");
     };
-
 }

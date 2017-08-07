@@ -8,14 +8,14 @@ import java.util.List;
 public class Credentials {
 
     public static final List<Credentials> LIST = Arrays.asList(
-            new Credentials(Jid.of("dummy@example.com"), "password")
+            new Credentials("dummy@example.com","password")
     );
 
     private final Jid jid;
     private final String password;
 
-    private Credentials(Jid jid, String password) {
-        this.jid = jid;
+    private Credentials(String jid, String password) {
+        this.jid = Jid.of(jid);
         this.password = password;
     }
 

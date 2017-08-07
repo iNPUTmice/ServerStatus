@@ -5,6 +5,7 @@
     <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XMPP Server Status for ${domain}</title>
     <style type="text/css">
         body {
             color: rgba(0, 0, 0, 0.87);
