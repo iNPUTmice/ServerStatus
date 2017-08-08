@@ -1,59 +1,10 @@
 <#ftl output_format="HTML">
-<!DOCTYPE html>
-<html>
-<head>
-    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>XMPP Server Status for ${domain}</title>
-    <style type="text/css">
-        body {
-            color: rgba(0, 0, 0, 0.87);
-            font-family: 'Roboto', sans-serif;
-            font-weight: 400;
-            font-size: 13pt;
-            background-color: #fafafa;
-        }
-
-        h1 {
-            color: rgba(0, 0, 0, 0.87);
-            font-family: 'Roboto', sans-serif;
-            font-weight: 600;
-            font-size: 20pt;
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-
-        td {
-            padding-right: 6px;
-            padding-left: 6px;
-        }
-
-        table tr:hover td {
-            background-color: #e0e0e0;
-        }
-
-        table tbody tr td.successful {
-            color: #43a047;
-        }
-
-        table tbody tr td.unsuccessful {
-            color: #e53935;
-        }
-
-        a {
-            color: #3f51b5;
-        }
-
-        p.small {
-            font-size: 10pt;
-        }
-    </style>
-</head>
-<body>
-<#if isLoggedIn??>
+<#import "page.ftl" as page/>
+<@page.page title="XMPP Server Status for ${domain}">
+<#if serverStatus??>
+    <#assign isLoggedIn = serverStatus.isLoggedIn()>
+    <#assign pingResults = serverStatus.getPingResults()>
+    <#assign lastUpdated = serverStatus.getDate()>
     <#if isLoggedIn>
     <h1>${domain} is up and running</h1>
     <table>
@@ -77,6 +28,4 @@
 <#else>
 <p>No information available on ${domain}</p>
 </#if>
-
-</body>
-</html>
+</@page.page>

@@ -1,4 +1,4 @@
-package im.conversations.status;
+package im.conversations.status.pojo;
 
 import rocks.xmpp.addr.Jid;
 

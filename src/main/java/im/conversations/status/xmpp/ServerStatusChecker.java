@@ -1,10 +1,13 @@
-package im.conversations.status;
+package im.conversations.status.xmpp;
 
+import im.conversations.status.persistence.ServerStatusStore;
+import im.conversations.status.pojo.Credentials;
+import im.conversations.status.pojo.PingResult;
+import im.conversations.status.pojo.ServerStatus;
 import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.XmppException;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.session.XmppSessionConfiguration;
-import rocks.xmpp.core.session.debug.ConsoleDebugger;
 import rocks.xmpp.extensions.disco.ServiceDiscoveryManager;
 import rocks.xmpp.extensions.ping.PingManager;
 import rocks.xmpp.im.roster.RosterManager;
@@ -28,7 +31,7 @@ public class ServerStatusChecker implements Runnable {
 
     @Override
     public void run() {
-        ServerStatusStore.INSTANCE.put(jid.getDomain(),checkStatus());
+        ServerStatusStore.INSTANCE.put(jid.getDomain(), checkStatus());
     }
 
     private ServerStatus checkStatus() {
@@ -36,8 +39,8 @@ public class ServerStatusChecker implements Runnable {
                 //.debugger(ConsoleDebugger.class)
                 .defaultResponseTimeout(Duration.ofSeconds(20))
                 .build();
-        System.out.println("Run status check for "+jid.getDomain());
-        try (XmppClient xmppClient = XmppClient.create(jid.getDomain(),xmppSessionConfiguration)) {
+        System.out.println("Run status check for " + jid.getDomain());
+        try (XmppClient xmppClient = XmppClient.create(jid.getDomain(), xmppSessionConfiguration)) {
             xmppClient.connect();
             xmppClient.getManager(RosterManager.class).setRetrieveRosterOnLogin(false);
             xmppClient.getManager(ServiceDiscoveryManager.class).setEnabled(false);
