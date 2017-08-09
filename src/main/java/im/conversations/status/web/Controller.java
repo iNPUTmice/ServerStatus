@@ -39,7 +39,8 @@ public class Controller {
     public static TemplateViewRoute getHistorical = (request, response) -> {
         HashMap<String, Object> model = new HashMap<>();
         model.put("serverMap", ServerStatusStore.INSTANCE.getStringHistoricalLoginStatuusMap());
-        model.put("durationInDays", HistoricalLoginStatuus.DURATION_IN_DAYS);
+        model.put("durations", HistoricalLoginStatuus.DURATIONS);
+        model.put("availableDomains", Credentials.AVAILABLE_DOMAINS);
         return new ModelAndView(model, "historical.ftl");
     };
 }

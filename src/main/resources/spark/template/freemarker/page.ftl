@@ -1,4 +1,4 @@
-<#macro page title="">
+<#macro page title="" historical=false>
 <!DOCTYPE html>
 <html>
 <head>
@@ -24,6 +24,10 @@
 
         table {
             border-collapse: collapse;
+        }
+
+        table.rightbound tr td:not(:first-child) {
+            text-align: right;
         }
 
         th {
@@ -55,10 +59,15 @@
         p.small {
             font-size: 10pt;
         }
+
+        p.info {
+            color: rgba(0, 0, 0, 0.54);
+        }
     </style>
 </head>
 <body>
     <#nested />
+<p class="small">Copyright 2017 <a href="https://gultsch.de">Daniel Gultsch</a> <#if !historical>&middot; <a href="/historical/">Historical data</a> </#if>&middot; <a href="https://github.com/iNPUTmice/ServerStatus">Source code</a></p>
 </body>
 </html>
 </#macro>

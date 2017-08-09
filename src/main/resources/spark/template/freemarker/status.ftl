@@ -1,6 +1,6 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="XMPP Server Status for ${domain}">
+<@page.page title="XMPP Server Status for ${domain}" historical=false>
 <#if serverStatus??>
     <#assign isLoggedIn = serverStatus.isLoggedIn()>
     <#assign pingResults = serverStatus.getPingResults()>
@@ -24,8 +24,8 @@
     <#else>
     <h1>${domain} seems to be down</h1>
     </#if>
-<p class="small">Last updated: ${lastUpdated?datetime}</p>
+<p class="small info">Last updated: ${lastUpdated?datetime}</p>
 <#else>
-<p>No information available on ${domain}</p>
+<p>No current information available on ${domain}</p>
 </#if>
 </@page.page>

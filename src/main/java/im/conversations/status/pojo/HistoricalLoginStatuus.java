@@ -8,7 +8,8 @@ import java.util.List;
 
 public class HistoricalLoginStatuus {
 
-    public static List<Integer> DURATION_IN_DAYS = Arrays.asList(1,7,30,365);
+    public static List<Integer> DURATIONS = Arrays.asList(1,7,30,365);
+    public static ChronoUnit UNIT = ChronoUnit.DAYS;
 
     private final HashMap<Duration,Double> durationLoginStatusMap;
 
@@ -17,11 +18,11 @@ public class HistoricalLoginStatuus {
     }
 
     public double getForDuration(int days) {
-        return this.durationLoginStatusMap.getOrDefault(Duration.ofDays(days),0d);
+        return this.durationLoginStatusMap.getOrDefault(Duration.of(days,UNIT),0d);
     }
 
     public boolean isAvailableForDuration(int days) {
-        return this.durationLoginStatusMap.containsKey(Duration.ofDays(days));
+        return this.durationLoginStatusMap.containsKey(Duration.of(days,UNIT));
     }
 
 }

@@ -9,9 +9,6 @@ import org.sql2o.Sql2oException;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Month;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAmount;
 import java.util.*;
 
 public class ServerStatusStore {
@@ -98,9 +95,9 @@ public class ServerStatusStore {
 
         private HistoricalLoginStatuus create(String server) {
             HashMap<Duration,Double> map = new HashMap<>();
-            for(int days : HistoricalLoginStatuus.DURATION_IN_DAYS) {
+            for(int d : HistoricalLoginStatuus.DURATIONS) {
                 try {
-                    final Duration duration = Duration.ofDays(days);
+                    final Duration duration = Duration.of(d,HistoricalLoginStatuus.UNIT);
                     map.put(duration,INSTANCE.getHistoricalLoginStatus(server,duration));
                 } catch (HistoricalDataNotAvailableException e) {
                     //ignore information not available
