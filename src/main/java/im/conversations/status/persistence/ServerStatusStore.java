@@ -1,11 +1,13 @@
 package im.conversations.status.persistence;
 
+import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
 import im.conversations.status.pojo.ServerStatus;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.Sql2oException;
+import rocks.xmpp.addr.Jid;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -87,9 +89,9 @@ public class ServerStatusStore {
 
         @Override
         public void run() {
-            for(String domain : Credentials.AVAILABLE_DOMAINS) {
-                final HistoricalLoginStatuus statuus = create(domain);
-                INSTANCE.put(domain,statuus);
+            for(Jid domain : Configuration.getInstance().getDomains()) {
+                final HistoricalLoginStatuus statuus = create(domain.getDomain());
+                INSTANCE.put(domain.getDomain(),statuus);
             }
         }
 

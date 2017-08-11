@@ -52,6 +52,10 @@
             color: #e53935;
         }
 
+        table tbody tr td.info {
+            color: rgba(0, 0, 0, 0.54);
+        }
+
         a {
             color: #3f51b5;
         }

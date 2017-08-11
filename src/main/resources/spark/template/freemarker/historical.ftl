@@ -22,7 +22,7 @@
                     <#assign availability=historicalData.getForDuration(duration)>
                     <td class="<#if 99.5 < availability>successful<#else>unsuccessful</#if>">${availability?string["0.##"]}&percnt;</td>
                 <#else>
-                    <td>N/A</td>
+                    <td class="info">N/A</td>
                 </#if>
             </#list>
         </tr>

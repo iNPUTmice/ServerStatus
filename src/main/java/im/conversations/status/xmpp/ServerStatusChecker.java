@@ -56,7 +56,6 @@ public class ServerStatusChecker implements Runnable {
                     .collect(Collectors.toList());
             return ServerStatus.createWithPingResults(results);
         } catch (XmppException e) {
-            e.printStackTrace();
             return ServerStatus.createWithLoginFailure();
         }
     }

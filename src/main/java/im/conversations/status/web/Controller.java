@@ -1,6 +1,7 @@
 package im.conversations.status.web;
 
 import im.conversations.status.persistence.ServerStatusStore;
+import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
 import im.conversations.status.pojo.ServerStatus;
@@ -15,14 +16,15 @@ import static spark.Spark.halt;
 public class Controller {
 
     public static TemplateViewRoute getStatus = (request, response) -> {
-        if (Credentials.AVAILABLE_DOMAINS.size() == 0) {
+        final Configuration configuration = Configuration.getInstance();
+        if (configuration.getDomains().size() == 0) {
             halt(500, "You have to configure at least on server");
-            response.redirect("/");
             return new ModelAndView(null, "redirect.ftl");
         }
         final String param = request.params("domain");
-        final String domain = param == null ? Credentials.AVAILABLE_DOMAINS.get(0) : Jid.ofDomain(param).getDomain();
-        if (param != null && Credentials.AVAILABLE_DOMAINS.get(0).equals(domain)) {
+        final String primaryDomain = configuration.getDomains().get(0).getDomain();
+        final String domain = param == null ? primaryDomain : Jid.ofDomain(param).getDomain();
+        if (param != null && domain.equals(primaryDomain)) {
             response.redirect("/");
             return new ModelAndView(null, "redirect.ftl");
         }
@@ -31,7 +33,7 @@ public class Controller {
         model.put("domain", domain);
         if (serverStatus != null) {
             model.put("serverStatus", serverStatus);
-            model.put("availableDomains", Credentials.AVAILABLE_DOMAINS);
+            model.put("availableDomains", configuration.getDomains());
         }
         return new ModelAndView(model, "status.ftl");
     };
@@ -40,7 +42,7 @@ public class Controller {
         HashMap<String, Object> model = new HashMap<>();
         model.put("serverMap", ServerStatusStore.INSTANCE.getStringHistoricalLoginStatuusMap());
         model.put("durations", HistoricalLoginStatuus.DURATIONS);
-        model.put("availableDomains", Credentials.AVAILABLE_DOMAINS);
+        model.put("availableDomains", Configuration.getInstance().getDomains());
         return new ModelAndView(model, "historical.ftl");
     };
 }
