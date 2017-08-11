@@ -1,0 +1,12 @@
+{
+  "credentials": [
+    {
+      "jid": "dummy@example.com",
+      "password": "secret"
+    }
+  ],
+  "additionalDomains": [
+    "jabber.org"
+  ]
+}
+
