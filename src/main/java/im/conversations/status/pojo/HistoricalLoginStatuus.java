@@ -3,17 +3,17 @@ package im.conversations.status.pojo;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HistoricalLoginStatuus {
 
     public static List<Integer> DURATIONS = Arrays.asList(1,7,30,365);
     public static ChronoUnit UNIT = ChronoUnit.DAYS;
 
-    private final HashMap<Duration,Double> durationLoginStatusMap;
+    private final Map<Duration,Double> durationLoginStatusMap;
 
-    public HistoricalLoginStatuus(HashMap<Duration,Double> map) {
+    public HistoricalLoginStatuus(Map<Duration,Double> map) {
         this.durationLoginStatusMap = map;
     }
 

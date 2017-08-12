@@ -1,7 +1,6 @@
 package im.conversations.status.persistence;
 
 import im.conversations.status.pojo.Configuration;
-import im.conversations.status.pojo.Credentials;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
 import im.conversations.status.pojo.ServerStatus;
 import org.sql2o.Connection;
@@ -89,14 +88,16 @@ public class ServerStatusStore {
 
         @Override
         public void run() {
-            for(Jid domain : Configuration.getInstance().getDomains()) {
+            final List<Jid> domains = new ArrayList<>(Configuration.getInstance().getDomains());
+            Collections.sort(domains);
+            for(Jid domain : domains) {
                 final HistoricalLoginStatuus statuus = create(domain.getDomain());
                 INSTANCE.put(domain.getDomain(),statuus);
             }
         }
 
         private HistoricalLoginStatuus create(String server) {
-            HashMap<Duration,Double> map = new HashMap<>();
+            final Map<Duration,Double> map = new HashMap<>();
             for(int d : HistoricalLoginStatuus.DURATIONS) {
                 try {
                     final Duration duration = Duration.of(d,HistoricalLoginStatuus.UNIT);
