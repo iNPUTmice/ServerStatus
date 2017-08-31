@@ -1,0 +1,6 @@
+.idea
+config.json
+ConversationsStatus.iml
+dependency-reduced-pom.xml
+serverstatusstore.db
+target
