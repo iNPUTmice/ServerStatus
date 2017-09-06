@@ -31,15 +31,16 @@ public class ServerStatusChecker implements Runnable {
 
     @Override
     public void run() {
-        ServerStatusStore.INSTANCE.put(jid.getDomain(), checkStatus());
+        try {
+            ServerStatusStore.INSTANCE.put(jid.getDomain(), checkStatus());
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     private ServerStatus checkStatus() {
         XmppSessionConfiguration xmppSessionConfiguration = XmppSessionConfiguration.builder()
-                //.debugger(ConsoleDebugger.class)
-                .defaultResponseTimeout(Duration.ofSeconds(20))
                 .build();
-        System.out.println("Run status check for " + jid.getDomain());
         try (XmppClient xmppClient = XmppClient.create(jid.getDomain(), xmppSessionConfiguration)) {
             xmppClient.connect();
             xmppClient.getManager(RosterManager.class).setRetrieveRosterOnLogin(false);

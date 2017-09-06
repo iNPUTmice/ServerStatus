@@ -23,13 +23,15 @@ public class ServerStatusStore {
     private ServerStatusStore() {
         final String dbFilename = getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
         this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
-        try (Connection connection = this.database.open()) {
-            final String createTable = "create table if not exists login_status (server TEXT, timestamp TEXT, status INTEGER)";
-            final String createIndex = "create index if not exists server_index on login_status(server)";
-            connection.createQuery(createTable).executeUpdate();
-            connection.createQuery(createIndex).executeUpdate();
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String createTable = "create table if not exists login_status (server TEXT, timestamp TEXT, status INTEGER)";
+                final String createIndex = "create index if not exists server_index on login_status(server)";
+                connection.createQuery(createTable).executeUpdate();
+                connection.createQuery(createIndex).executeUpdate();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 
@@ -37,11 +39,15 @@ public class ServerStatusStore {
         synchronized (serverStatusMap) {
             serverStatusMap.put(server, serverStatus);
         }
-        try (Connection connection = this.database.open()) {
-            connection.createQuery("INSERT INTO login_status(server,timestamp,status) VALUES(:server,:timestamp,:status)")
-                    .bind(serverStatus.getLoginStatus())
-                    .addParameter("server", server)
-                    .executeUpdate();
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                connection.createQuery("INSERT INTO login_status(server,timestamp,status) VALUES(:server,:timestamp,:status)")
+                        .bind(serverStatus.getLoginStatus())
+                        .addParameter("server", server)
+                        .executeUpdate();
+            } catch (Exception e) {
+                System.err.println("Error writing status to database");
+            }
         }
     }
 
