@@ -58,27 +58,29 @@ public class ServerStatusStore {
     }
 
     private double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
-        try (Connection connection = this.database.open()) {
-            final Instant start = Instant.now().minus(duration);
-            final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
-                    .addParameter("server", server)
-                    .addParameter("start", start)
-                    .executeScalar(Integer.class);
-            if (total == 0) {
-                throw new HistoricalDataNotAvailableException("Historical data does not reach back to " + start.toString());
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final Instant start = Instant.now().minus(duration);
+                final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
+                        .addParameter("server", server)
+                        .addParameter("start", start)
+                        .executeScalar(Integer.class);
+                if (total == 0) {
+                    throw new HistoricalDataNotAvailableException("Historical data does not reach back to " + start.toString());
+                }
+                final List<Boolean> statuus = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
+                        .addParameter("server", server)
+                        .addParameter("start", start)
+                        .executeAndFetch(Boolean.class);
+                final int count = statuus.size();
+                if (count == 0) {
+                    throw new HistoricalDataNotAvailableException("No information available for time span");
+                }
+                final double successes = statuus.stream().filter(s -> s).count();
+                return (successes / count) * 100;
+            } catch (Sql2oException e) {
+                throw new HistoricalDataNotAvailableException(e);
             }
-            final List<Boolean> statuus = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
-                    .addParameter("server", server)
-                    .addParameter("start", start)
-                    .executeAndFetch(Boolean.class);
-            final int count = statuus.size();
-            if (count == 0) {
-                throw new HistoricalDataNotAvailableException("No information available for time span");
-            }
-            final double successes = statuus.stream().filter(s -> s).count();
-            return (successes / count) * 100;
-        } catch (Sql2oException e) {
-            throw new HistoricalDataNotAvailableException(e);
         }
     }
 
