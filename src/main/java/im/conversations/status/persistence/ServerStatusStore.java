@@ -21,7 +21,7 @@ public class ServerStatusStore {
     private final HashMap<String, HistoricalLoginStatuus> serverHistoricalLoginStatuusMap = new LinkedHashMap<>();
 
     private ServerStatusStore() {
-        final String dbFilename = getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
+        final String dbFilename = Configuration.getInstance().getStoragePath()+getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
         this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
         synchronized (this.database) {
             try (Connection connection = this.database.open()) {

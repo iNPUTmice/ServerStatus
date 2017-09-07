@@ -2,6 +2,7 @@ package im.conversations.status.pojo;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import im.conversations.status.json.JidDeserializer;
 import rocks.xmpp.addr.Jid;
 
@@ -22,6 +23,9 @@ public class Configuration {
     private List<Jid> additionalDomains = Collections.emptyList();
     private List<Jid> domains = Collections.emptyList();
     private List<Jid> pingTargets = new ArrayList<>();
+    private String ip = "127.0.0.1";
+    private int port = 4567;
+    private String storagePath = "."+File.separator;
 
     private Configuration() {
 
@@ -29,6 +33,22 @@ public class Configuration {
 
     public List<Credentials> getCredentials() {
         return credentials;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getStoragePath() {
+        if (storagePath.endsWith(File.separator)) {
+            return storagePath;
+        } else {
+            return storagePath+File.separator;
+        }
     }
 
     public List<Jid> getDomains() {
@@ -46,8 +66,10 @@ public class Configuration {
         Configuration.FILE = new File(filename);
     }
 
-    public synchronized  static  Configuration getInstance() {
-        INSTANCE = load();
+    public synchronized static  Configuration getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = load();
+        }
         return INSTANCE;
     }
 
@@ -56,6 +78,7 @@ public class Configuration {
         gsonBuilder.registerTypeAdapter(Jid.class,new JidDeserializer());
         final Gson gson = gsonBuilder.create();
         try {
+            System.out.println("Reading configuration from "+FILE.getAbsolutePath());
             final Configuration configuration = gson.fromJson(new FileReader(FILE),Configuration.class);
             configuration.domains = configuration.credentials.stream().map(c -> Jid.of(c.getJid().getDomain())).collect(Collectors.toList());
             configuration.pingTargets.addAll(configuration.domains);
@@ -63,7 +86,9 @@ public class Configuration {
             Collections.sort(configuration.pingTargets);
             return configuration;
         } catch (FileNotFoundException e) {
-            return new Configuration();
+            throw new RuntimeException("Configuration file not found");
+        } catch (JsonSyntaxException e) {
+            throw new RuntimeException("Invalid syntax in config file");
         }
     }
 }
