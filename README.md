@@ -18,6 +18,6 @@ git clone https://github.com/iNPUTmice/ServerStatus.git
 cd ServerStatus
 mvn package
 cp config.example.json config.json
-java -jar target/ServerStatus.jar -c config.json
+java -jar target/ServerStatus.jar -c /path/to/config.json
 ```
 
