@@ -40,6 +40,7 @@ public class ServerStatusChecker implements Runnable {
 
     private ServerStatus checkStatus() {
         XmppSessionConfiguration xmppSessionConfiguration = XmppSessionConfiguration.builder()
+                .defaultResponseTimeout(Duration.ofSeconds(10))
                 .build();
         try (XmppClient xmppClient = XmppClient.create(jid.getDomain(), xmppSessionConfiguration)) {
             xmppClient.connect();
