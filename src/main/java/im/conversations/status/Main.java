@@ -52,7 +52,8 @@ public class Main {
         });
 
         get("/", Controller.getStatus, templateEngine);
-        get("/historical/", Controller.getHistorical,templateEngine);
+        get("/historical/", Controller.getHistorical, templateEngine);
+        get("/reverse/:domain/", Controller.getReverse, templateEngine);
         get("/:domain/", Controller.getStatus, templateEngine);
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(5);
         for (Credentials credentials : Configuration.getInstance().getCredentials()) {

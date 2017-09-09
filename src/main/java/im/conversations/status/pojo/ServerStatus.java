@@ -3,6 +3,7 @@ package im.conversations.status.pojo;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class ServerStatus {
 
@@ -28,6 +29,10 @@ public class ServerStatus {
 
     public List<PingResult> getPingResults() {
         return pingResults;
+    }
+
+    public Optional<PingResult> getPingResult(String domain) {
+        return pingResults.stream().filter(pr -> domain.equals(pr.getServer().getDomain())).findFirst();
     }
 
     public Date getDate() {

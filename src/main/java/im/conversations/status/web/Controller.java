@@ -1,15 +1,13 @@
 package im.conversations.status.web;
 
 import im.conversations.status.persistence.ServerStatusStore;
-import im.conversations.status.pojo.Configuration;
-import im.conversations.status.pojo.Credentials;
-import im.conversations.status.pojo.HistoricalLoginStatuus;
-import im.conversations.status.pojo.ServerStatus;
+import im.conversations.status.pojo.*;
 import rocks.xmpp.addr.Jid;
 import spark.ModelAndView;
 import spark.TemplateViewRoute;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static spark.Spark.halt;
 
@@ -44,5 +42,13 @@ public class Controller {
         model.put("durations", HistoricalLoginStatuus.DURATIONS);
         model.put("availableDomains", Configuration.getInstance().getDomains());
         return new ModelAndView(model, "historical.ftl");
+    };
+
+    public static TemplateViewRoute getReverse = (request, response) -> {
+        final String domain = request.params("domain");
+        HashMap<String,Object> model = new HashMap<>();
+        model.put("pingResults", ServerStatusStore.INSTANCE.getReverseStatusMap(domain));
+        model.put("domain",domain);
+        return new ModelAndView(model, "reverse.ftl");
     };
 }

@@ -56,6 +56,10 @@
             color: rgba(0, 0, 0, 0.54);
         }
 
+        table tr td sup small {
+            color: rgba(0, 0, 0, 0.54);
+        }
+
         a {
             color: #3f51b5;
         }

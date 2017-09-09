@@ -2,6 +2,7 @@ package im.conversations.status.persistence;
 
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
+import im.conversations.status.pojo.PingResult;
 import im.conversations.status.pojo.ServerStatus;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
@@ -11,6 +12,8 @@ import rocks.xmpp.addr.Jid;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ServerStatusStore {
 
@@ -21,7 +24,7 @@ public class ServerStatusStore {
     private final HashMap<String, HistoricalLoginStatuus> serverHistoricalLoginStatuusMap = new LinkedHashMap<>();
 
     private ServerStatusStore() {
-        final String dbFilename = Configuration.getInstance().getStoragePath()+getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
+        final String dbFilename = Configuration.getInstance().getStoragePath() + getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
         this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
         synchronized (this.database) {
             try (Connection connection = this.database.open()) {
@@ -53,7 +56,7 @@ public class ServerStatusStore {
 
     private void put(String server, HistoricalLoginStatuus historicalLoginStatuus) {
         synchronized (serverHistoricalLoginStatuusMap) {
-            serverHistoricalLoginStatuusMap.put(server,historicalLoginStatuus);
+            serverHistoricalLoginStatuusMap.put(server, historicalLoginStatuus);
         }
     }
 
@@ -90,9 +93,21 @@ public class ServerStatusStore {
         }
     }
 
-    public Map<String,HistoricalLoginStatuus> getStringHistoricalLoginStatuusMap() {
+    public Map<String, HistoricalLoginStatuus> getStringHistoricalLoginStatuusMap() {
         synchronized (serverHistoricalLoginStatuusMap) {
             return Collections.unmodifiableMap(new LinkedHashMap<>(serverHistoricalLoginStatuusMap));
+        }
+    }
+
+    public Collection<PingResult> getReverseStatusMap(final String server) {
+        synchronized (serverStatusMap) {
+            return serverStatusMap.entrySet().stream()
+                    .flatMap(e -> {
+                        Optional<PingResult> pr = e.getValue().getPingResult(server);
+                        return pr.map(pingResult -> Stream.of(new PingResult(Jid.of(e.getKey()), pingResult.isSuccessful()))).orElseGet(Stream::empty);
+                    })
+                    .sorted(Comparator.comparing(PingResult::getServer))
+                    .collect(Collectors.toList());
         }
     }
 
@@ -102,18 +117,18 @@ public class ServerStatusStore {
         public void run() {
             final List<Jid> domains = new ArrayList<>(Configuration.getInstance().getDomains());
             Collections.sort(domains);
-            for(Jid domain : domains) {
+            for (Jid domain : domains) {
                 final HistoricalLoginStatuus statuus = create(domain.getDomain());
-                INSTANCE.put(domain.getDomain(),statuus);
+                INSTANCE.put(domain.getDomain(), statuus);
             }
         }
 
         private HistoricalLoginStatuus create(String server) {
-            final Map<Duration,Double> map = new HashMap<>();
-            for(int d : HistoricalLoginStatuus.DURATIONS) {
+            final Map<Duration, Double> map = new HashMap<>();
+            for (int d : HistoricalLoginStatuus.DURATIONS) {
                 try {
-                    final Duration duration = Duration.of(d,HistoricalLoginStatuus.UNIT);
-                    map.put(duration,INSTANCE.getHistoricalLoginStatus(server,duration));
+                    final Duration duration = Duration.of(d, HistoricalLoginStatuus.UNIT);
+                    map.put(duration, INSTANCE.getHistoricalLoginStatus(server, duration));
                 } catch (HistoricalDataNotAvailableException e) {
                     //ignore information not available
                 }
