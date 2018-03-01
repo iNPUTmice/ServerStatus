@@ -1,0 +1,89 @@
+package im.conversations.status.persistence;
+
+import im.conversations.status.pojo.Configuration;
+import im.conversations.status.pojo.Credentials;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
+import rocks.xmpp.addr.Jid;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class CredentialStore {
+    public static final CredentialStore INSTANCE = new CredentialStore();
+    private final Sql2o database;
+    private List<Credentials> credentialsList;
+    private List<Jid> additionalDomains;
+
+    private CredentialStore() {
+        additionalDomains = Configuration.getInstance().getAdditionalDomains();
+        final String dbFilename = Configuration.getInstance().getStoragePath() + getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
+        this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String createTable = "create table if not exists credentials (jid TEXT, password TEXT)";
+                connection.createQuery(createTable).executeUpdate();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
+        }
+    }
+
+    public boolean put(Credentials credentials) {
+        boolean success = false;
+        //TODO: Check credential validity
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
+                connection.createQuery(addCreds).bind(credentials).executeUpdate();
+                success = true;
+            }
+        }
+        fetchFromDB();
+        return success;
+    }
+
+    private void fetchFromDB() {
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String selectCreds = "SELECT jid,password from credentials";
+                this.credentialsList = connection.createQuery(selectCreds).executeAndFetch(Credentials.class);
+            } catch (Exception ex) {
+                System.out.println("Could not get credentials from database");
+            }
+        }
+    }
+
+    public List<Credentials> getCredentialsList() {
+        if(credentialsList == null) {
+            fetchFromDB();
+        }
+        return Collections.unmodifiableList(credentialsList);
+    }
+
+    public List<Jid> getDomains() {
+        List<Credentials> credentialsList = getCredentialsList();
+        if(credentialsList == null) {
+            return new ArrayList<>();
+        }
+        Jid top = Jid.of(credentialsList.get(0).getJid().getDomain());
+        List<Jid> domainList = credentialsList.stream().map(c -> Jid.of(c.getJid().getDomain())).sorted().collect(Collectors.toList());
+        // Make sure that the first domain is kept at top irrespective of its position alphabetically
+        domainList.remove(top);
+        domainList.add(0,top);
+        return domainList;
+    }
+
+    public List<Jid> getPingTargets() {
+        List<Jid> domains = getDomains();
+        List<Jid> pingTargets = Stream.concat(domains.stream(),additionalDomains.stream()).sorted().collect(Collectors.toList());
+        // Make sure that the first domain is kept at top irrespective of its position alphabetically
+        pingTargets.remove(domains.get(0));
+        pingTargets.add(0,domains.get(0));
+        return pingTargets;
+    }
+}
