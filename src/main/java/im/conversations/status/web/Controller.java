@@ -1,6 +1,5 @@
 package im.conversations.status.web;
 
-import im.conversations.status.Main;
 import im.conversations.status.persistence.CredentialStore;
 import im.conversations.status.persistence.ServerStatusStore;
 import im.conversations.status.pojo.*;
@@ -21,7 +20,7 @@ public class Controller {
             return new ModelAndView(null, "add.ftl");
         }
         final String param = request.params("domain");
-        final String primaryDomain = domains.get(0).getDomain();
+        final String primaryDomain = Configuration.getInstance().getPrimaryCredentials().getJid().getDomain();
         final String domain = param == null ? primaryDomain : Jid.ofDomain(param).getDomain();
         if (param != null && domain.equals(primaryDomain)) {
             response.redirect("/");
@@ -33,6 +32,9 @@ public class Controller {
         if (serverStatus != null) {
             model.put("serverStatus", serverStatus);
             model.put("availableDomains", domains);
+        } else if(domains.stream().map(d -> d.getDomain()).anyMatch(d -> d.equals(domain))) {
+            // If domain is present in domain list but it's result is not present in server status
+            halt(200,"Running tests on the server. Refresh after some time to see results");
         }
         return new ModelAndView(model, "status.ftl");
     };
@@ -61,11 +63,9 @@ public class Controller {
         Credentials credentials = new Credentials(jid,password);
         boolean status = CredentialStore.INSTANCE.put(credentials);
         if(status) {
-            Main.scheduleStatusCheck();
             response.redirect("/" + credentials.getJid().getDomain());
-        }
-        else {
-            halt(400,"Could not add server with the provided credentials");
+        } else {
+            halt(400,"ERROR: Could not add server with the provided credentials");
         }
         return null;
     };

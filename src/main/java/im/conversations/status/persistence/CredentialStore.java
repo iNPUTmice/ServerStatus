@@ -1,12 +1,13 @@
 package im.conversations.status.persistence;
 
+import im.conversations.status.Main;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
+import im.conversations.status.xmpp.CredentialsVerifier;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import rocks.xmpp.addr.Jid;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -34,20 +35,21 @@ public class CredentialStore {
     }
 
     public boolean put(Credentials credentials) {
-        boolean success = false;
-        //TODO: Check credential validity
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
-                connection.createQuery(addCreds).bind(credentials).executeUpdate();
-                success = true;
+        boolean success = CredentialsVerifier.verifyCredentials(credentials);
+        if(success) {
+            synchronized (this.database) {
+                try (Connection connection = this.database.open()) {
+                    final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
+                    connection.createQuery(addCreds).bind(credentials).executeUpdate();
+                }
             }
+            fetchCredentials();
+            Main.scheduleStatusCheck();
         }
-        fetchFromDB();
         return success;
     }
 
-    private void fetchFromDB() {
+    private void fetchCredentials() {
         synchronized (this.database) {
             try (Connection connection = this.database.open()) {
                 final String selectCreds = "SELECT jid,password from credentials";
@@ -55,35 +57,29 @@ public class CredentialStore {
             } catch (Exception ex) {
                 System.out.println("Could not get credentials from database");
             }
+            credentialsList.add(0,Configuration.getInstance().getPrimaryCredentials());
         }
     }
 
     public List<Credentials> getCredentialsList() {
         if(credentialsList == null) {
-            fetchFromDB();
+            fetchCredentials();
         }
         return Collections.unmodifiableList(credentialsList);
     }
 
     public List<Jid> getDomains() {
-        List<Credentials> credentialsList = getCredentialsList();
-        if(credentialsList == null) {
-            return new ArrayList<>();
-        }
-        Jid top = Jid.of(credentialsList.get(0).getJid().getDomain());
-        List<Jid> domainList = credentialsList.stream().map(c -> Jid.of(c.getJid().getDomain())).sorted().collect(Collectors.toList());
-        // Make sure that the first domain is kept at top irrespective of its position alphabetically
-        domainList.remove(top);
-        domainList.add(0,top);
-        return domainList;
+        return getCredentialsList().stream()
+                .map(c -> Jid.of(c.getJid().getDomain()))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public List<Jid> getPingTargets() {
-        List<Jid> domains = getDomains();
-        List<Jid> pingTargets = Stream.concat(domains.stream(),additionalDomains.stream()).sorted().collect(Collectors.toList());
-        // Make sure that the first domain is kept at top irrespective of its position alphabetically
-        pingTargets.remove(domains.get(0));
-        pingTargets.add(0,domains.get(0));
-        return pingTargets;
+        return Stream.concat(
+                getDomains().stream(),
+                additionalDomains.stream())
+                .sorted()
+                .collect(Collectors.toList());
     }
 }

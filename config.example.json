@@ -2,12 +2,10 @@
   "ip": "127.0.0.1",
   "port": 4567,
   "storagePath": "/var/lib/serverstatus/",
-  "credentials": [
-    {
+  "primaryCredentials": {
       "jid": "dummy@example.com",
       "password": "secret"
-    }
-  ],
+  },
   "additionalDomains": [
     "jabber.org"
   ]

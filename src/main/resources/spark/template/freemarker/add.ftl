@@ -1,6 +1,6 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="Add server for XMPP status checker" historical=false>
+<@page.page title="Add server for XMPP status checker" historical=false add=true>
 <h1>Add credentials for your server</h1>
 <form action="/add/" method="post">
     JID:<br>

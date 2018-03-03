@@ -37,8 +37,9 @@ public class Main {
 
     private static void main(Options options) {
         try {
-            if (CredentialStore.INSTANCE.getCredentialsList().size() == 0) {
-                System.out.println("Database doesnot contain credentials.");
+            if (Configuration.getInstance().getPrimaryCredentials() == null) {
+                System.err.println("Database does not contain primary credentials.");
+                return;
             }
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
