@@ -36,14 +36,8 @@ public class Main {
     }
 
     private static void main(Options options) {
-        try {
-            if (Configuration.getInstance().getPrimaryCredentials() == null) {
-                System.err.println("Database does not contain primary credentials.");
-                return;
-            }
-        } catch (RuntimeException e) {
-            System.err.println(e.getMessage());
-            return;
+        if (Configuration.getInstance().getPrimaryDomain() == null) {
+            System.err.println("Configuration does not have primary domain");
         }
 
         ipAddress(Configuration.getInstance().getIp());

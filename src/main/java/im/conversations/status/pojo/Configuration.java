@@ -18,7 +18,7 @@ public class Configuration {
     private static Configuration INSTANCE;
 
     private List<Jid> additionalDomains = Collections.emptyList();
-    private Credentials primaryCredentials;
+    private String primaryDomain;
     private String ip = "127.0.0.1";
     private int port = 4567;
     private String storagePath = "."+File.separator;
@@ -35,10 +35,9 @@ public class Configuration {
         return port;
     }
 
-    public Credentials getPrimaryCredentials() {
-        return primaryCredentials;
+    public String getPrimaryDomain() {
+        return primaryDomain;
     }
-
     public String getStoragePath() {
         if (storagePath.endsWith(File.separator)) {
             return storagePath;

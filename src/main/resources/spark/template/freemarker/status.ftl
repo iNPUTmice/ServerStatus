@@ -13,7 +13,7 @@
             <tr>
                 <td>
                 <#if availableDomains?seq_contains(result.getServer())>
-                    <a href="/<#if availableDomains?seq_index_of(result.getServer()) != 0>${result.getServer()}/</#if>">${result.getServer()}</a>
+                    <a href="/<#if result.getServer() != primaryDomain>${result.getServer()}/</#if>">${result.getServer()}</a>
                 <#elseif linkReverse>
                     <a href="/reverse/${result.getServer()}">${result.getServer()}</a> <sup><small>R</small></sup>
                 <#else>

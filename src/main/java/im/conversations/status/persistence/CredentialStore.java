@@ -36,7 +36,7 @@ public class CredentialStore {
 
     public boolean put(Credentials credentials) {
         boolean success = CredentialsVerifier.verifyCredentials(credentials);
-        if(success) {
+        if (success) {
             synchronized (this.database) {
                 try (Connection connection = this.database.open()) {
                     final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
@@ -57,12 +57,11 @@ public class CredentialStore {
             } catch (Exception ex) {
                 System.out.println("Could not get credentials from database");
             }
-            credentialsList.add(0,Configuration.getInstance().getPrimaryCredentials());
         }
     }
 
     public List<Credentials> getCredentialsList() {
-        if(credentialsList == null) {
+        if (credentialsList == null) {
             fetchCredentials();
         }
         return Collections.unmodifiableList(credentialsList);

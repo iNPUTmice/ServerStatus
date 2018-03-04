@@ -13,7 +13,13 @@ public class CredentialsVerifier {
         XmppSessionConfiguration xmppSessionConfiguration = XmppSessionConfiguration.builder()
                 .defaultResponseTimeout(Duration.ofSeconds(10))
                 .build();
-        Jid jid = credentials.getJid();
+        Jid jid;
+        // Handles invalid credentials gracefully rather than throwing Internal Server error
+        try {
+            jid = credentials.getJid();
+        } catch (Exception ex) {
+            return false;
+        }
         String password = credentials.getPassword();
         try (XmppClient xmppClient = XmppClient.create(jid.getDomain(), xmppSessionConfiguration)) {
             xmppClient.connect();

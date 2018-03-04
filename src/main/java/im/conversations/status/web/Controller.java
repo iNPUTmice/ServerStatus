@@ -20,7 +20,8 @@ public class Controller {
             return new ModelAndView(null, "add.ftl");
         }
         final String param = request.params("domain");
-        final String primaryDomain = Configuration.getInstance().getPrimaryCredentials().getJid().getDomain();
+        final String primaryDomain = Configuration.getInstance().getPrimaryDomain() == null ?
+                domains.get(0).getDomain() : Configuration.getInstance().getPrimaryDomain();
         final String domain = param == null ? primaryDomain : Jid.ofDomain(param).getDomain();
         if (param != null && domain.equals(primaryDomain)) {
             response.redirect("/");
@@ -29,10 +30,11 @@ public class Controller {
         ServerStatus serverStatus = ServerStatusStore.INSTANCE.getServerStatus(domain);
         HashMap<String, Object> model = new HashMap<>();
         model.put("domain", domain);
+        model.put("primaryDomain",primaryDomain);
         if (serverStatus != null) {
             model.put("serverStatus", serverStatus);
             model.put("availableDomains", domains);
-        } else if(domains.stream().map(d -> d.getDomain()).anyMatch(d -> d.equals(domain))) {
+        } else if(domains.stream().map(Jid::getDomain).anyMatch(d -> d.equals(domain))) {
             // If domain is present in domain list but it's result is not present in server status
             halt(200,"Running tests on the server. Refresh after some time to see results");
         }
@@ -41,6 +43,9 @@ public class Controller {
 
     public static TemplateViewRoute getHistorical = (request, response) -> {
         HashMap<String, Object> model = new HashMap<>();
+        final String primaryDomain = Configuration.getInstance().getPrimaryDomain() == null ?
+                CredentialStore.INSTANCE.getDomains().get(0).getDomain() : Configuration.getInstance().getPrimaryDomain();
+        model.put("primaryDomain",primaryDomain);
         model.put("serverMap", ServerStatusStore.INSTANCE.getStringHistoricalLoginStatuusMap());
         model.put("durations", HistoricalLoginStatuus.DURATIONS);
         model.put("availableDomains", CredentialStore.INSTANCE.getDomains());
