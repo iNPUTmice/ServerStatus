@@ -36,6 +36,8 @@ public class Main {
     }
 
     private static void main(Options options) {
+
+
         if (Configuration.getInstance().getPrimaryDomain() == null) {
             System.err.println("Configuration does not have primary domain");
         }
@@ -53,6 +55,8 @@ public class Main {
         get("/historical/", Controller.getHistorical, templateEngine);
         post("/add/",Controller.postAdd, templateEngine);
         get("/add/", Controller.getAdd, templateEngine);
+        get("/live/:domain/",Controller.getLive,templateEngine);
+        get("/availability/:domain/", Controller.getAvailability);
         get("/reverse/:domain/", Controller.getReverse, templateEngine);
         get("/:domain/", Controller.getStatus, templateEngine);
         scheduleStatusCheck();

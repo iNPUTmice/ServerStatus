@@ -5,6 +5,7 @@ import im.conversations.status.persistence.ServerStatusStore;
 import im.conversations.status.pojo.*;
 import rocks.xmpp.addr.Jid;
 import spark.ModelAndView;
+import spark.Route;
 import spark.TemplateViewRoute;
 
 import java.util.HashMap;
@@ -36,7 +37,7 @@ public class Controller {
             model.put("availableDomains", domains);
         } else if(domains.stream().map(Jid::getDomain).anyMatch(d -> d.equals(domain))) {
             // If domain is present in domain list but it's result is not present in server status
-            halt(200,"Running tests on the server. Refresh after some time to see results");
+            response.redirect("/live/" + domain);
         }
         return new ModelAndView(model, "status.ftl");
     };
@@ -60,6 +61,13 @@ public class Controller {
         return new ModelAndView(model, "reverse.ftl");
     };
 
+ public static TemplateViewRoute getLive = (request, response) -> {
+         final String domain = request.params("domain");
+         HashMap<String,Object> model = new HashMap<>();
+         model.put("domain",domain);
+        return new ModelAndView(model,"live.ftl");
+    };
+
     public static TemplateViewRoute getAdd = (request, response) -> new ModelAndView(null,"add.ftl");
 
     public static TemplateViewRoute postAdd = (request, response) -> {
@@ -68,10 +76,26 @@ public class Controller {
         Credentials credentials = new Credentials(jid,password);
         boolean status = CredentialStore.INSTANCE.put(credentials);
         if(status) {
-            response.redirect("/" + credentials.getJid().getDomain());
+            response.redirect("/live/" + credentials.getJid().getDomain());
         } else {
             halt(400,"ERROR: Could not add server with the provided credentials");
         }
         return null;
+    };
+    public static Route getAvailability = (request, response) -> {
+        String domain = request.params("domain");
+        ServerStatus serverStatus = ServerStatusStore.INSTANCE.getServerStatus(domain);
+        if(serverStatus != null) {
+            response.status(200);
+            return "AVAILABLE";
+        }
+        else if(!CredentialStore.INSTANCE.getDomains().stream().anyMatch(s -> s.getDomain().equals(domain))) {
+            response.status(404);
+            return "INVALID";
+        }
+        else {
+            response.status(200);
+            return "UNAVAILABLE";
+        }
     };
 }
