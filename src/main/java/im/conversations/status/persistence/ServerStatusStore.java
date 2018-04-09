@@ -104,7 +104,7 @@ public class ServerStatusStore {
             return serverStatusMap.entrySet().stream()
                     .flatMap(e -> {
                         Optional<PingResult> pr = e.getValue().getPingResult(server);
-                        return pr.map(pingResult -> Stream.of(new PingResult(Jid.of(e.getKey()), pingResult.isSuccessful()))).orElseGet(Stream::empty);
+                        return pr.map(pingResult -> Stream.of(new PingResult(e.getKey(), pingResult.isSuccessful()))).orElseGet(Stream::empty);
                     })
                     .sorted(Comparator.comparing(PingResult::getServer))
                     .collect(Collectors.toList());

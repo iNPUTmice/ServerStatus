@@ -46,18 +46,22 @@ public class ServerStatusChecker implements Runnable {
             xmppClient.connect();
             xmppClient.getManager(RosterManager.class).setRetrieveRosterOnLogin(false);
             xmppClient.getManager(ServiceDiscoveryManager.class).setEnabled(false);
+            final PingManager pingManager = xmppClient.getManager(PingManager.class);
             xmppClient.login(jid.getLocal(), password);
-            PingManager pingManager = xmppClient.getManager(PingManager.class);
             List<PingResult> results = serversToPing.parallelStream()
                     .filter(s -> !s.toString().equals(jid.getDomain()))
                     .map(server -> pingManager.ping(server)
                             .toCompletableFuture()
                             .thenApply(result -> new PingResult(server, result))
-                            .exceptionally(throwable -> new PingResult(server, false)))
+                            .exceptionally(throwable -> {
+                                throwable.printStackTrace();
+                                return new PingResult(server, false);
+                            }))
                     .map(CompletableFuture::join)
                     .collect(Collectors.toList());
             return ServerStatus.createWithPingResults(results);
         } catch (XmppException e) {
+            System.err.println(jid.getDomain() + ": " + e.getMessage());
             return ServerStatus.createWithLoginFailure();
         }
     }
