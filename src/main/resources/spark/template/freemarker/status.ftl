@@ -1,6 +1,6 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="XMPP Server Status for ${domain}" historical=false add=false>
+<@page.page title="XMPP Server Status for ${domain}" historical=false>
 <#if serverStatus??>
     <#assign isLoggedIn = serverStatus.isLoggedIn()>
     <#assign pingResults = serverStatus.getPingResults()>

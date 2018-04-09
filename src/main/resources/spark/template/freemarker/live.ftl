@@ -1,6 +1,6 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="Checking status of ${domain}" historical=false add=false>
+<@page.page title="Checking status of ${domain}" historical=false>
 <script>
     xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {

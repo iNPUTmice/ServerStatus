@@ -1,4 +1,4 @@
-<#macro page title="" historical=false add=false>
+<#macro page title="" historical=false>
 <!DOCTYPE html>
 <html>
 <head>
@@ -75,7 +75,7 @@
 </head>
 <body>
     <#nested />
-<p class="small">Copyright 2017 <a href="https://gultsch.de">Daniel Gultsch</a> <#if !historical>&middot; <a href="/historical/">Historical data</a></#if><#if !add> &middot; <a href="/add">Add your server</a></#if> &middot; <a href="https://github.com/iNPUTmice/ServerStatus">Source code</a></p>
+<p class="small">Copyright 2017 <a href="https://gultsch.de">Daniel Gultsch</a> <#if !historical>&middot; <a href="/historical/">Historical data</a></#if> &middot; <a href="https://github.com/iNPUTmice/ServerStatus">Source code</a></p>
 </body>
 </html>
 </#macro>

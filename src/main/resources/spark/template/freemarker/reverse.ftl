@@ -1,7 +1,7 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
 <#assign title="Reverse reachability for ${domain}">
-<@page.page title=$title historical=false add=false>
+<@page.page title=$title historical=false>
 <h1>${title}</h1>
 <table class="rightbound">
     <#list pingResults as result>

@@ -1,6 +1,6 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="Historical uptime data" historical=true add=false>
+<@page.page title="Historical uptime data" historical=true>
 <h1>Historical uptime data</h1>
 <#if serverMap?size == 0>
     <p class="info">Calculating historical data</p>

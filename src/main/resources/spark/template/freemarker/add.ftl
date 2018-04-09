@@ -1,9 +1,10 @@
 <#ftl output_format="HTML">
 <#import "page.ftl" as page/>
-<@page.page title="Add server for XMPP status checker" historical=false add=true>
+<@page.page title="Add server for XMPP status checker" historical=false>
+<#assign accent= "#3f51b5">
 <style>
     form > * {
-        font-size: 1em;
+        font-size: 0.9em;
     }
     label {
         display: inline-block;
@@ -13,29 +14,30 @@
     }
     input {
         width: 300px;
-        font-size: 0.95em;
+        font-size: 0.9em;
         background: none;
         text-decoration: none;
         outline: none !important;
         border: none;
-        border-bottom: solid 2px #43a047;
+        border-bottom: solid 2px ${accent};
     }
     form > div {
-        margin: 10px;
-        padding: 10px;
+        margin: 5px;
+        padding: 5px;
     }
     #form_button {
-        width: 200px;
-        font-size: 1em;
+        width: 150px;
+        font-size: 0.95em;
         background: none;
-        border: solid 2px #43a047;
+        border: solid 2px ${accent};
         cursor: pointer;
         text-align: center;
-        margin-left: 50px;
-        padding: 10px;
+        margin-left: 100px;
+        margin-top: 10px;
+        padding: 6px;
     }
     #form_button:hover {
-      background: #43a047;
+      background: ${accent};
       color: #F2F3EB;
       -webkit-transition: all 0.3s;
       -transition: all 0.3s;
