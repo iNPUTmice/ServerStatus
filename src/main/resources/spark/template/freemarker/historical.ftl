@@ -16,7 +16,7 @@
     </thead>
     <#list serverMap as server, historicalData>
         <tr>
-            <td><a href="/<#if availableDomains?seq_index_of(server) != 0>${server}/</#if>">${server}</a></td>
+            <td><a href="/<#if server != primaryDomain>${server}/</#if>">${server}</a></td>
             <#list durations as duration>
                 <#if historicalData.isAvailableForDuration(duration)>
                     <#assign availability=historicalData.getForDuration(duration)>

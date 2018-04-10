@@ -4,16 +4,16 @@ import rocks.xmpp.addr.Jid;
 
 public class Credentials {
 
-    private final Jid jid;
+    private final String jid;
     private final String password;
 
-    private Credentials(String jid, String password) {
-        this.jid = Jid.of(jid);
+    public Credentials(String jid, String password) {
+        this.jid = jid;
         this.password = password;
     }
 
     public Jid getJid() {
-        return jid;
+        return Jid.of(jid);
     }
 
     public String getPassword() {

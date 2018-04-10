@@ -1,14 +1,17 @@
 package im.conversations.status;
 
+import im.conversations.status.persistence.CredentialStore;
 import im.conversations.status.persistence.ServerStatusStore;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.web.Controller;
 import im.conversations.status.xmpp.ServerStatusChecker;
 import org.apache.commons.cli.*;
+import rocks.xmpp.addr.Jid;
 import spark.TemplateEngine;
 import spark.template.freemarker.FreeMarkerEngine;
 
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +19,7 @@ import static spark.Spark.*;
 
 public class Main {
 
+    private static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(5);
     public static void main(String... args) {
         Options options = new Options();
         options.addOption(new Option("c","config",true,"Path to the config file"));
@@ -32,14 +36,10 @@ public class Main {
     }
 
     private static void main(Options options) {
-        try {
-            if (Configuration.getInstance().getCredentials().size() == 0) {
-                System.err.println("Please specify at least one login credentials");
-                return;
-            }
-        } catch (RuntimeException e) {
-            System.err.println(e.getMessage());
-            return;
+
+
+        if (Configuration.getInstance().getPrimaryDomain() == null) {
+            System.err.println("Configuration does not have primary domain");
         }
 
         ipAddress(Configuration.getInstance().getIp());
@@ -53,11 +53,21 @@ public class Main {
 
         get("/", Controller.getStatus, templateEngine);
         get("/historical/", Controller.getHistorical, templateEngine);
+        post("/add/",Controller.postAdd, templateEngine);
+        get("/add/", Controller.getAdd, templateEngine);
+        get("/live/:domain/",Controller.getLive,templateEngine);
+        get("/availability/:domain/", Controller.getAvailability);
         get("/reverse/:domain/", Controller.getReverse, templateEngine);
         get("/:domain/", Controller.getStatus, templateEngine);
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(5);
-        for (Credentials credentials : Configuration.getInstance().getCredentials()) {
-            scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, Configuration.getInstance().getPingTargets()), 0, 2, TimeUnit.MINUTES);
+        scheduleStatusCheck();
+    }
+
+    public static void scheduleStatusCheck() {
+        scheduledThreadPoolExecutor.getQueue().clear();
+        List<Credentials> credentialsList = CredentialStore.INSTANCE.getCredentialsList();
+        List<Jid> pingTargetList = CredentialStore.INSTANCE.getPingTargets();
+        for (Credentials credentials : credentialsList) {
+            scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, pingTargetList), 0, 2, TimeUnit.MINUTES);
         }
         scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusStore.HistoricalDataUpdater(),0,10,TimeUnit.MINUTES);
     }

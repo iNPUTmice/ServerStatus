@@ -115,7 +115,7 @@ public class ServerStatusStore {
 
         @Override
         public void run() {
-            final List<Jid> domains = new ArrayList<>(Configuration.getInstance().getDomains());
+            final List<Jid> domains = new ArrayList<>(CredentialStore.INSTANCE.getDomains());
             Collections.sort(domains);
             for (Jid domain : domains) {
                 final HistoricalLoginStatuus statuus = create(domain.getDomain());
