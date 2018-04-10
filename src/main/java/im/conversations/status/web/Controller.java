@@ -3,6 +3,7 @@ package im.conversations.status.web;
 import im.conversations.status.persistence.CredentialStore;
 import im.conversations.status.persistence.ServerStatusStore;
 import im.conversations.status.pojo.*;
+import im.conversations.status.xmpp.CredentialsVerifier;
 import rocks.xmpp.addr.Jid;
 import spark.ModelAndView;
 import spark.Route;
@@ -74,11 +75,28 @@ public class Controller {
         String jid = request.queryParams("jid");
         String password = request.queryParams("password");
         Credentials credentials = new Credentials(jid,password);
+
+        // Check for existence of domain in database
+        String domain = credentials.getJid().getDomain();
+        boolean domainExists = CredentialStore.INSTANCE.getCredentialsList().stream()
+                .map(c -> c.getJid().getDomain())
+                .anyMatch(c -> c.equals(domain));
+        if(domainExists) {
+            halt(400, "<p>ERROR: Domain already exists. Click <a href=\"/" + domain + "\">here</a> to check its result</p>");
+        }
+
+        // Verify credentials
+        boolean verified = CredentialsVerifier.verifyCredentials(credentials);
+        if(!verified) {
+            halt(400,"ERROR: Invalid credentials provided");
+        }
+
+        // Add credentials to database
         boolean status = CredentialStore.INSTANCE.put(credentials);
         if(status) {
             response.redirect("/live/" + credentials.getJid().getDomain());
         } else {
-            halt(400,"ERROR: Could not add server with the provided credentials");
+            halt(400,"ERROR: Could not add server with the provided credentials to the database");
         }
         return null;
     };

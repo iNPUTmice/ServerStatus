@@ -3,7 +3,6 @@ package im.conversations.status.persistence;
 import im.conversations.status.Main;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
-import im.conversations.status.xmpp.CredentialsVerifier;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import rocks.xmpp.addr.Jid;
@@ -35,18 +34,18 @@ public class CredentialStore {
     }
 
     public boolean put(Credentials credentials) {
-        boolean success = CredentialsVerifier.verifyCredentials(credentials);
-        if (success) {
-            synchronized (this.database) {
-                try (Connection connection = this.database.open()) {
-                    final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
-                    connection.createQuery(addCreds).bind(credentials).executeUpdate();
-                }
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
+                connection.createQuery(addCreds).bind(credentials).executeUpdate();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return false;
             }
             fetchCredentials();
             Main.scheduleStatusCheck();
         }
-        return success;
+        return true;
     }
 
     private void fetchCredentials() {
