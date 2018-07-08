@@ -39,13 +39,32 @@ public class CredentialStore {
                 final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
                 connection.createQuery(addCreds).bind(credentials).executeUpdate();
             } catch (Exception ex) {
-                ex.printStackTrace();
                 return false;
             }
-            fetchCredentials();
-            Main.scheduleStatusCheck();
         }
+        fetchAndReschedule();
         return true;
+    }
+
+    public boolean delete(Credentials credentials) {
+        synchronized (this.database) {
+            try (Connection connection = this.database.open()) {
+                final String SQL = "DELETE FROM credentials WHERE jid = :jid AND password = :password";
+                int numRows = connection.createQuery(SQL).bind(credentials).executeUpdate().getResult();
+                if (numRows == 0) {
+                    return false;
+                }
+            } catch (Exception ex) {
+                return false;
+            }
+        }
+        fetchAndReschedule();
+        return true;
+    }
+
+    private void fetchAndReschedule() {
+        fetchCredentials();
+        Main.scheduleStatusCheck();
     }
 
     private void fetchCredentials() {
