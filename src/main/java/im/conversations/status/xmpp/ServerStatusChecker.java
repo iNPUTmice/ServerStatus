@@ -1,5 +1,6 @@
 package im.conversations.status.xmpp;
 
+import im.conversations.status.network.NetworkAvailability;
 import im.conversations.status.persistence.CredentialStore;
 import im.conversations.status.persistence.ServerStatusStore;
 import im.conversations.status.persistence.ThreeStrikesStore;
@@ -17,6 +18,7 @@ import rocks.xmpp.im.roster.RosterManager;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -33,13 +35,13 @@ public class ServerStatusChecker implements Runnable {
     @Override
     public void run() {
         try {
-            ServerStatusStore.INSTANCE.put(credentials.getJid().getDomain(), checkStatus());
+            checkStatus().ifPresent(serverStatus -> ServerStatusStore.INSTANCE.put(credentials.getJid().getDomain(), serverStatus));
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    private ServerStatus checkStatus() {
+    private Optional<ServerStatus> checkStatus() {
         XmppSessionConfiguration xmppSessionConfiguration = XmppSessionConfiguration.builder()
                 .defaultResponseTimeout(Duration.ofSeconds(10))
                 .build();
@@ -57,17 +59,21 @@ public class ServerStatusChecker implements Runnable {
                             .exceptionally(throwable -> new PingResult(server, false)))
                     .map(CompletableFuture::join)
                     .collect(Collectors.toList());
-            return ServerStatus.createWithPingResults(results);
+            return Optional.of(ServerStatus.createWithPingResults(results));
         } catch (AuthenticationException e) {
             if (ThreeStrikesStore.INSTANCE.strike(credentials)) {
                 if (CredentialStore.INSTANCE.delete(credentials)) {
                     System.out.println("successfully deleted credentials for "+credentials.getJid() + " after three strikes");
                 }
             }
-            return ServerStatus.createWithLoginFailure();
+            return Optional.of(ServerStatus.createWithLoginFailure());
         } catch (XmppException e) {
+            if (!NetworkAvailability.test()) {
+                System.err.println("Network unavailable");
+                return Optional.empty();
+            }
             System.err.println(credentials.getJid().getDomain()+": "+e.getMessage());
-            return ServerStatus.createWithLoginFailure();
+            return Optional.of(ServerStatus.createWithLoginFailure());
         }
     }
 }
