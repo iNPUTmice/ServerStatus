@@ -1,5 +1,7 @@
 package im.conversations.status.persistence;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import im.conversations.status.Main;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
@@ -22,41 +24,38 @@ public class CredentialStore {
     private CredentialStore() {
         additionalDomains = Configuration.getInstance().getAdditionalDomains();
         final String dbFilename = Configuration.getInstance().getStoragePath() + getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
-        this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String createTable = "create table if not exists credentials (jid TEXT, password TEXT)";
-                connection.createQuery(createTable).executeUpdate();
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
-            }
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setMaximumPoolSize(1);
+        dataSource.setJdbcUrl("jdbc:sqlite:" + dbFilename);
+        this.database = new Sql2o(dataSource);
+        try (Connection connection = this.database.open()) {
+            final String createTable = "create table if not exists credentials (jid TEXT, password TEXT)";
+            connection.createQuery(createTable).executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
     }
 
     public boolean put(Credentials credentials) {
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
-                connection.createQuery(addCreds).bind(credentials).executeUpdate();
-            } catch (Exception ex) {
-                return false;
-            }
+        try (Connection connection = this.database.open()) {
+            final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
+            connection.createQuery(addCreds).bind(credentials).executeUpdate();
+        } catch (Exception ex) {
+            return false;
         }
         fetchAndReschedule();
         return true;
     }
 
     public boolean delete(Credentials credentials) {
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String SQL = "DELETE FROM credentials WHERE jid = :jid AND password = :password";
-                int numRows = connection.createQuery(SQL).bind(credentials).executeUpdate().getResult();
-                if (numRows == 0) {
-                    return false;
-                }
-            } catch (Exception ex) {
+        try (Connection connection = this.database.open()) {
+            final String SQL = "DELETE FROM credentials WHERE jid = :jid AND password = :password";
+            int numRows = connection.createQuery(SQL).bind(credentials).executeUpdate().getResult();
+            if (numRows == 0) {
                 return false;
             }
+        } catch (Exception ex) {
+            return false;
         }
         fetchAndReschedule();
         return true;
@@ -68,13 +67,11 @@ public class CredentialStore {
     }
 
     private void fetchCredentials() {
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String selectCreds = "SELECT jid,password from credentials";
-                this.credentialsList = connection.createQuery(selectCreds).executeAndFetch(Credentials.class);
-            } catch (Exception ex) {
-                System.out.println("Could not get credentials from database");
-            }
+        try (Connection connection = this.database.open()) {
+            final String selectCreds = "SELECT jid,password from credentials";
+            this.credentialsList = connection.createQuery(selectCreds).executeAndFetch(Credentials.class);
+        } catch (Exception ex) {
+            System.out.println("Could not get credentials from database");
         }
     }
 

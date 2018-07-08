@@ -1,5 +1,6 @@
 package im.conversations.status.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
 import im.conversations.status.pojo.PingResult;
@@ -25,16 +26,17 @@ public class ServerStatusStore {
 
     private ServerStatusStore() {
         final String dbFilename = Configuration.getInstance().getStoragePath() + getClass().getSimpleName().toLowerCase(Locale.US) + ".db";
-        this.database = new Sql2o("jdbc:sqlite:" + dbFilename, null, null);
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final String createTable = "create table if not exists login_status (server TEXT, timestamp TEXT, status INTEGER)";
-                final String createIndex = "create index if not exists server_index on login_status(server)";
-                connection.createQuery(createTable).executeUpdate();
-                connection.createQuery(createIndex).executeUpdate();
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
-            }
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl("jdbc:sqlite:" + dbFilename);
+        dataSource.setMaximumPoolSize(1);
+        this.database = new Sql2o(dataSource);
+        try (Connection connection = this.database.open()) {
+            final String createTable = "create table if not exists login_status (server TEXT, timestamp TEXT, status INTEGER)";
+            final String createIndex = "create index if not exists server_index on login_status(server)";
+            connection.createQuery(createTable).executeUpdate();
+            connection.createQuery(createIndex).executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
     }
 
@@ -42,15 +44,13 @@ public class ServerStatusStore {
         synchronized (serverStatusMap) {
             serverStatusMap.put(server, serverStatus);
         }
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                connection.createQuery("INSERT INTO login_status(server,timestamp,status) VALUES(:server,:timestamp,:status)")
-                        .bind(serverStatus.getLoginStatus())
-                        .addParameter("server", server)
-                        .executeUpdate();
-            } catch (Exception e) {
-                System.err.println("Error writing status to database");
-            }
+        try (Connection connection = this.database.open()) {
+            connection.createQuery("INSERT INTO login_status(server,timestamp,status) VALUES(:server,:timestamp,:status)")
+                    .bind(serverStatus.getLoginStatus())
+                    .addParameter("server", server)
+                    .executeUpdate();
+        } catch (Exception e) {
+            System.err.println("Error writing status to database");
         }
     }
 
@@ -61,29 +61,27 @@ public class ServerStatusStore {
     }
 
     private double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
-        synchronized (this.database) {
-            try (Connection connection = this.database.open()) {
-                final Instant start = Instant.now().minus(duration);
-                final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
-                        .addParameter("server", server)
-                        .addParameter("start", start)
-                        .executeScalar(Integer.class);
-                if (total == 0) {
-                    throw new HistoricalDataNotAvailableException("Historical data does not reach back to " + start.toString());
-                }
-                final List<Boolean> statuus = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
-                        .addParameter("server", server)
-                        .addParameter("start", start)
-                        .executeAndFetch(Boolean.class);
-                final int count = statuus.size();
-                if (count == 0) {
-                    throw new HistoricalDataNotAvailableException("No information available for time span");
-                }
-                final double successes = statuus.stream().filter(s -> s).count();
-                return (successes / count) * 100;
-            } catch (Sql2oException e) {
-                throw new HistoricalDataNotAvailableException(e);
+        try (Connection connection = this.database.open()) {
+            final Instant start = Instant.now().minus(duration);
+            final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
+                    .addParameter("server", server)
+                    .addParameter("start", start)
+                    .executeScalar(Integer.class);
+            if (total == 0) {
+                throw new HistoricalDataNotAvailableException("Historical data does not reach back to " + start.toString());
             }
+            final List<Boolean> statuus = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
+                    .addParameter("server", server)
+                    .addParameter("start", start)
+                    .executeAndFetch(Boolean.class);
+            final int count = statuus.size();
+            if (count == 0) {
+                throw new HistoricalDataNotAvailableException("No information available for time span");
+            }
+            final double successes = statuus.stream().filter(s -> s).count();
+            return (successes / count) * 100;
+        } catch (Sql2oException e) {
+            throw new HistoricalDataNotAvailableException(e);
         }
     }
 
