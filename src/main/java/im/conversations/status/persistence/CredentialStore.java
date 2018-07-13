@@ -1,10 +1,11 @@
 package im.conversations.status.persistence;
 
-import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import im.conversations.status.Main;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import rocks.xmpp.addr.Jid;
@@ -16,7 +17,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CredentialStore {
+
     public static final CredentialStore INSTANCE = new CredentialStore();
+    private static final Logger LOGGER = LoggerFactory.getLogger(CredentialStore.class);
     private final Sql2o database;
     private List<Credentials> credentialsList;
     private List<Jid> additionalDomains;
@@ -32,7 +35,7 @@ public class CredentialStore {
             final String createTable = "create table if not exists credentials (jid TEXT, password TEXT)";
             connection.createQuery(createTable).executeUpdate();
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            LOGGER.error("Unable to initialize database", e);
         }
     }
 
@@ -40,20 +43,6 @@ public class CredentialStore {
         try (Connection connection = this.database.open()) {
             final String addCreds = "INSERT into credentials(jid,password) VALUES(:jid,:password)";
             connection.createQuery(addCreds).bind(credentials).executeUpdate();
-        } catch (Exception ex) {
-            return false;
-        }
-        fetchAndReschedule();
-        return true;
-    }
-
-    public boolean delete(Credentials credentials) {
-        try (Connection connection = this.database.open()) {
-            final String SQL = "DELETE FROM credentials WHERE jid = :jid AND password = :password";
-            int numRows = connection.createQuery(SQL).bind(credentials).executeUpdate().getResult();
-            if (numRows == 0) {
-                return false;
-            }
         } catch (Exception ex) {
             return false;
         }
@@ -71,15 +60,30 @@ public class CredentialStore {
             final String selectCreds = "SELECT jid,password from credentials";
             this.credentialsList = connection.createQuery(selectCreds).executeAndFetch(Credentials.class);
         } catch (Exception ex) {
-            System.out.println("Could not get credentials from database");
+            LOGGER.error("Unable to load credentials from database");
         }
     }
 
-    public List<Credentials> getCredentialsList() {
-        if (credentialsList == null) {
-            fetchCredentials();
+    public boolean delete(Credentials credentials) {
+        try (Connection connection = this.database.open()) {
+            final String SQL = "DELETE FROM credentials WHERE jid = :jid AND password = :password";
+            int numRows = connection.createQuery(SQL).bind(credentials).executeUpdate().getResult();
+            if (numRows == 0) {
+                return false;
+            }
+        } catch (Exception ex) {
+            return false;
         }
-        return Collections.unmodifiableList(credentialsList);
+        fetchAndReschedule();
+        return true;
+    }
+
+    public List<Jid> getPingTargets() {
+        return Stream.concat(
+                getDomains().stream(),
+                additionalDomains.stream())
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public List<Jid> getDomains() {
@@ -89,11 +93,10 @@ public class CredentialStore {
                 .collect(Collectors.toList());
     }
 
-    public List<Jid> getPingTargets() {
-        return Stream.concat(
-                getDomains().stream(),
-                additionalDomains.stream())
-                .sorted()
-                .collect(Collectors.toList());
+    public List<Credentials> getCredentialsList() {
+        if (credentialsList == null) {
+            fetchCredentials();
+        }
+        return Collections.unmodifiableList(credentialsList);
     }
 }

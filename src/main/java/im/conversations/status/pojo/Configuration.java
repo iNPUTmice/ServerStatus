@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import im.conversations.status.json.JidDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rocks.xmpp.addr.Jid;
 
 import java.io.File;
@@ -13,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class Configuration {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private static File FILE = new File("config.json");
     private static Configuration INSTANCE;
@@ -69,7 +73,7 @@ public class Configuration {
         gsonBuilder.registerTypeAdapter(Jid.class,new JidDeserializer());
         final Gson gson = gsonBuilder.create();
         try {
-            System.out.println("Reading configuration from "+FILE.getAbsolutePath());
+            LOGGER.debug("Reading configuration from "+FILE.getAbsolutePath());
             final Configuration configuration = gson.fromJson(new FileReader(FILE),Configuration.class);
             return configuration;
         } catch (FileNotFoundException e) {

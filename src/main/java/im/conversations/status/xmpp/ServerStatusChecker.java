@@ -7,6 +7,8 @@ import im.conversations.status.persistence.ThreeStrikesStore;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.pojo.PingResult;
 import im.conversations.status.pojo.ServerStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.XmppException;
 import rocks.xmpp.core.sasl.AuthenticationException;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 
 public class ServerStatusChecker implements Runnable {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerStatusChecker.class);
+
     private final Credentials credentials;
     private final List<Jid> serversToPing;
 
@@ -36,8 +40,8 @@ public class ServerStatusChecker implements Runnable {
     public void run() {
         try {
             checkStatus().ifPresent(serverStatus -> ServerStatusStore.INSTANCE.put(credentials.getJid().getDomain(), serverStatus));
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            LOGGER.error("unexpected problem", t);
         }
     }
 
@@ -61,18 +65,20 @@ public class ServerStatusChecker implements Runnable {
                     .collect(Collectors.toList());
             return Optional.of(ServerStatus.createWithPingResults(results));
         } catch (AuthenticationException e) {
+            LOGGER.info("Authentication failure while testing " + credentials.getJid().getDomain());
             if (ThreeStrikesStore.INSTANCE.strike(credentials)) {
                 if (CredentialStore.INSTANCE.delete(credentials)) {
-                    System.out.println("successfully deleted credentials for "+credentials.getJid() + " after three strikes");
+                    LOGGER.info("successfully deleted credentials for " + credentials.getJid() + " after three strikes");
                 }
             }
             return Optional.of(ServerStatus.createWithLoginFailure());
         } catch (XmppException e) {
+            final String domain = credentials.getJid().getDomain();
             if (!NetworkAvailability.test()) {
-                System.err.println("Network unavailable");
+                LOGGER.info("Network unavailable while testing " + domain);
                 return Optional.empty();
             }
-            System.err.println(credentials.getJid().getDomain()+": "+e.getMessage());
+            LOGGER.info(e.getMessage() + " while testing " + domain);
             return Optional.of(ServerStatus.createWithLoginFailure());
         }
     }

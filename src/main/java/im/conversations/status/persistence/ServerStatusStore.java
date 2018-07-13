@@ -5,6 +5,8 @@ import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.HistoricalLoginStatuus;
 import im.conversations.status.pojo.PingResult;
 import im.conversations.status.pojo.ServerStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 import org.sql2o.Sql2oException;
@@ -19,7 +21,7 @@ import java.util.stream.Stream;
 public class ServerStatusStore {
 
     public static final ServerStatusStore INSTANCE = new ServerStatusStore();
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerStatusStore.class.getName());
     private final Sql2o database;
     private final HashMap<String, ServerStatus> serverStatusMap = new HashMap<>();
     private final HashMap<String, HistoricalLoginStatuus> serverHistoricalLoginStatuusMap = new LinkedHashMap<>();
@@ -36,7 +38,7 @@ public class ServerStatusStore {
             connection.createQuery(createTable).executeUpdate();
             connection.createQuery(createIndex).executeUpdate();
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            LOGGER.error("unable initialize database", e);
         }
     }
 
@@ -44,13 +46,14 @@ public class ServerStatusStore {
         synchronized (serverStatusMap) {
             serverStatusMap.put(server, serverStatus);
         }
-        try (Connection connection = this.database.open()) {
+        try (Connection connection = this.database.beginTransaction(java.sql.Connection.TRANSACTION_SERIALIZABLE)) {
             connection.createQuery("INSERT INTO login_status(server,timestamp,status) VALUES(:server,:timestamp,:status)")
                     .bind(serverStatus.getLoginStatus())
                     .addParameter("server", server)
                     .executeUpdate();
-        } catch (Exception e) {
-            System.err.println("Error writing status to database");
+            connection.commit();
+        } catch (final Exception e) {
+            LOGGER.warn("unable to write server status to database", e);
         }
     }
 

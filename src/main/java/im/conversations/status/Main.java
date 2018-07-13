@@ -7,6 +7,8 @@ import im.conversations.status.pojo.Credentials;
 import im.conversations.status.web.Controller;
 import im.conversations.status.xmpp.ServerStatusChecker;
 import org.apache.commons.cli.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rocks.xmpp.addr.Jid;
 import spark.TemplateEngine;
 import spark.template.freemarker.FreeMarkerEngine;
@@ -19,18 +21,21 @@ import static spark.Spark.*;
 
 public class Main {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
     private static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(5);
+
     public static void main(String... args) {
         Options options = new Options();
-        options.addOption(new Option("c","config",true,"Path to the config file"));
+        options.addOption(new Option("c", "config", true, "Path to the config file"));
         try {
-            CommandLine cmd = new DefaultParser().parse( options, args);
+            CommandLine cmd = new DefaultParser().parse(options, args);
             String configPath = cmd.getOptionValue("c");
             if (configPath != null) {
                 Configuration.setFilename(configPath);
             }
         } catch (ParseException e) {
-            //ignore. Just start with default config
+            LOGGER.warn("unable to parse config. using default", e);
         }
         main(options);
     }
@@ -39,7 +44,7 @@ public class Main {
 
 
         if (Configuration.getInstance().getPrimaryDomain() == null) {
-            System.err.println("Configuration does not have primary domain");
+            LOGGER.info("Configuration does not have primary domain");
         }
 
         ipAddress(Configuration.getInstance().getIp());
@@ -53,9 +58,9 @@ public class Main {
 
         get("/", Controller.getStatus, templateEngine);
         get("/historical/", Controller.getHistorical, templateEngine);
-        post("/add/",Controller.postAdd, templateEngine);
+        post("/add/", Controller.postAdd, templateEngine);
         get("/add/", Controller.getAdd, templateEngine);
-        get("/live/:domain/",Controller.getLive,templateEngine);
+        get("/live/:domain/", Controller.getLive, templateEngine);
         get("/availability/:domain/", Controller.getAvailability);
         get("/reverse/:domain/", Controller.getReverse, templateEngine);
         get("/:domain/", Controller.getStatus, templateEngine);
@@ -69,6 +74,6 @@ public class Main {
         for (Credentials credentials : credentialsList) {
             scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, pingTargetList), 0, 2, TimeUnit.MINUTES);
         }
-        scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusStore.HistoricalDataUpdater(),0,10,TimeUnit.MINUTES);
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusStore.HistoricalDataUpdater(), 0, 10, TimeUnit.MINUTES);
     }
 }
