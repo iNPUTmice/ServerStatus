@@ -85,19 +85,18 @@ public class Database {
     private double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
         try (Connection connection = this.database.open()) {
             final Instant start = Instant.now().minus(duration);
-            //can this be replaced with exists?
-            final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
+            final boolean exists = connection.createQuery("select exists(SELECT status FROM login_status WHERE server=:server and timestamp < :start)")
                     .addParameter("server", server)
                     .addParameter("start", start)
-                    .executeScalar(Integer.class);
-            if (total == 0) {
+                    .executeScalar(Boolean.class);
+            if (!exists) {
                 throw new HistoricalDataNotAvailableException("Historical data does not reach back to " + start.toString());
             }
-            final List<Boolean> statuus = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
+            final List<Boolean> status = connection.createQuery("SELECT status FROM login_status WHERE server=:server and timestamp >= :start")
                     .addParameter("server", server)
                     .addParameter("start", start)
                     .executeAndFetch(Boolean.class);
-            final int count = statuus.size();
+            final int count = status.size();
             if (count == 0) {
                 throw new HistoricalDataNotAvailableException("No information available for time span");
             }
@@ -106,9 +105,10 @@ public class Database {
             if (count < needed) {
                 throw new HistoricalDataNotAvailableException("Not enough data points. " + count + " / " + needed);
             }
-            final double successes = statuus.stream().filter(s -> s).count();
+            final double successes = status.stream().filter(s -> s).count();
             return (successes / count) * 100;
         } catch (Sql2oException e) {
+            LOGGER.error("Unable to get historical data for " + server, e);
             throw new HistoricalDataNotAvailableException(e);
         }
     }
@@ -214,7 +214,7 @@ public class Database {
                 final HistoricalLoginStatus status = create(domain);
                 INSTANCE.put(domain, status);
             }
-            LOGGER.info("calculated historic data for "+domains.size()+" domains in "+Duration.between(start,Instant.now()));
+            LOGGER.info("calculated historic data for " + domains.size() + " domains in " + Duration.between(start, Instant.now()));
         }
 
         private HistoricalLoginStatus create(String server) {
