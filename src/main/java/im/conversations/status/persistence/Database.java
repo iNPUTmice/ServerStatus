@@ -21,7 +21,7 @@ public class Database {
     private static final String CREATE_LOGIN_STATUS = "CREATE TABLE IF NOT EXISTS login_status (server VARCHAR(255), timestamp DATETIME, status INTEGER, index server_index(server))";
     private static final String CREATE_CREDENTIALS = "CREATE TABLE IF NOT EXISTS credentials (username VARCHAR(255), domain VARCHAR(255), password VARCHAR(255))";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Database.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
     private static final Database INSTANCE = new Database();
     private final Sql2o database;
     private final HashMap<String, ServerStatus> serverStatusMap = new HashMap<>();
@@ -85,6 +85,7 @@ public class Database {
     private double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
         try (Connection connection = this.database.open()) {
             final Instant start = Instant.now().minus(duration);
+            //can this be replaced with exists?
             final int total = connection.createQuery("SELECT count(status) FROM login_status WHERE server=:server and timestamp < :start")
                     .addParameter("server", server)
                     .addParameter("start", start)
@@ -202,13 +203,18 @@ public class Database {
 
     public static class HistoricalDataUpdater implements Runnable {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(HistoricalDataUpdater.class);
+
         @Override
         public void run() {
+            final Instant start = Instant.now();
             Database.getInstance().discardExpired();
-            for (String domain : Database.getInstance().getDomains()) {
+            final List<String> domains = Database.getInstance().getDomains();
+            for (final String domain : domains) {
                 final HistoricalLoginStatus status = create(domain);
                 INSTANCE.put(domain, status);
             }
+            LOGGER.info("calculated historic data for "+domains.size()+" domains in "+Duration.between(start,Instant.now()));
         }
 
         private HistoricalLoginStatus create(String server) {
