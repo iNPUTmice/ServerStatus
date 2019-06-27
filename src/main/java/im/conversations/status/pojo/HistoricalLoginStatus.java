@@ -6,14 +6,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class HistoricalLoginStatuus {
+public class HistoricalLoginStatus {
 
     public static List<Integer> DURATIONS = Arrays.asList(1,7,30,365);
     public static ChronoUnit UNIT = ChronoUnit.DAYS;
 
     private final Map<Duration,Double> durationLoginStatusMap;
 
-    public HistoricalLoginStatuus(Map<Duration,Double> map) {
+    public HistoricalLoginStatus(Map<Duration,Double> map) {
         this.durationLoginStatusMap = map;
     }
 

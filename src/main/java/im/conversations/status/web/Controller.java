@@ -1,7 +1,6 @@
 package im.conversations.status.web;
 
-import im.conversations.status.persistence.CredentialStore;
-import im.conversations.status.persistence.ServerStatusStore;
+import im.conversations.status.persistence.Database;
 import im.conversations.status.pojo.*;
 import im.conversations.status.xmpp.CredentialsVerifier;
 import rocks.xmpp.addr.Jid;
@@ -17,47 +16,57 @@ import static spark.Spark.halt;
 public class Controller {
 
     public static TemplateViewRoute getStatus = (request, response) -> {
-        final List<Jid> domains = CredentialStore.INSTANCE.getDomains();
+        final List<String> domains = Database.getInstance().getDomains();
         if (domains.size() == 0) {
             return new ModelAndView(null, "add.ftl");
         }
         final String param = request.params("domain");
         final String primaryDomain = Configuration.getInstance().getPrimaryDomain() == null ?
-                domains.get(0).getDomain() : Configuration.getInstance().getPrimaryDomain();
+                domains.get(0): Configuration.getInstance().getPrimaryDomain();
         final String domain = param == null ? primaryDomain : Jid.ofDomain(param).getDomain();
         if (param != null && domain.equals(primaryDomain)) {
             response.redirect("/");
             return new ModelAndView(null, "redirect.ftl");
         }
-        ServerStatus serverStatus = ServerStatusStore.INSTANCE.getServerStatus(domain);
+        ServerStatus serverStatus = Database.getInstance().getServerStatus(domain);
         HashMap<String, Object> model = new HashMap<>();
         model.put("domain", domain);
         model.put("primaryDomain",primaryDomain);
         if (serverStatus != null) {
             model.put("serverStatus", serverStatus);
             model.put("availableDomains", domains);
-        } else if(domains.stream().map(Jid::getDomain).anyMatch(d -> d.equals(domain))) {
+        } else if(domains.contains(domain)) {
             // If domain is present in domain list but it's result is not present in server status
             response.redirect("/live/" + domain);
         }
         return new ModelAndView(model, "status.ftl");
     };
 
+    public static TemplateViewRoute getBadge = (request, response) -> {
+        final HashMap<String, Object> model = new HashMap<>();
+        final String domain = request.params("domain");
+        HistoricalLoginStatus statusMap = Database.getInstance().getStringHistoricalLoginStatusMap().get(domain);
+        if (statusMap != null && statusMap.isAvailableForDuration(30)) {
+            model.put("availability",statusMap.getForDuration(30));
+        }
+        return new ModelAndView(model, "badge.ftl");
+    };
+
     public static TemplateViewRoute getHistorical = (request, response) -> {
         HashMap<String, Object> model = new HashMap<>();
         final String primaryDomain = Configuration.getInstance().getPrimaryDomain() == null ?
-                CredentialStore.INSTANCE.getDomains().get(0).getDomain() : Configuration.getInstance().getPrimaryDomain();
+                Database.getInstance().getDomains().get(0) : Configuration.getInstance().getPrimaryDomain();
         model.put("primaryDomain",primaryDomain);
-        model.put("serverMap", ServerStatusStore.INSTANCE.getStringHistoricalLoginStatuusMap());
-        model.put("durations", HistoricalLoginStatuus.DURATIONS);
-        model.put("availableDomains", CredentialStore.INSTANCE.getDomains());
+        model.put("serverMap", Database.getInstance().getStringHistoricalLoginStatusMap());
+        model.put("durations", HistoricalLoginStatus.DURATIONS);
+        model.put("availableDomains", Database.getInstance().getDomains());
         return new ModelAndView(model, "historical.ftl");
     };
 
     public static TemplateViewRoute getReverse = (request, response) -> {
         final String domain = request.params("domain");
         HashMap<String,Object> model = new HashMap<>();
-        model.put("pingResults", ServerStatusStore.INSTANCE.getReverseStatusMap(domain));
+        model.put("pingResults", Database.getInstance().getReverseStatusMap(domain));
         model.put("domain",domain);
         return new ModelAndView(model, "reverse.ftl");
     };
@@ -78,10 +87,7 @@ public class Controller {
 
         // Check for existence of domain in database
         String domain = credentials.getJid().getDomain();
-        boolean domainExists = CredentialStore.INSTANCE.getCredentialsList().stream()
-                .map(c -> c.getJid().getDomain())
-                .anyMatch(c -> c.equals(domain));
-        if(domainExists) {
+        if(Database.getInstance().exists(domain)) {
             halt(400, "<p>ERROR: Domain already exists. Click <a href=\"/" + domain + "\">here</a> to check its result</p>");
         }
 
@@ -92,7 +98,7 @@ public class Controller {
         }
 
         // Add credentials to database
-        boolean status = CredentialStore.INSTANCE.put(credentials);
+        boolean status = Database.getInstance().put(credentials);
         if(status) {
             response.redirect("/live/" + credentials.getJid().getDomain());
         } else {
@@ -102,12 +108,12 @@ public class Controller {
     };
     public static Route getAvailability = (request, response) -> {
         String domain = request.params("domain");
-        ServerStatus serverStatus = ServerStatusStore.INSTANCE.getServerStatus(domain);
+        ServerStatus serverStatus = Database.getInstance().getServerStatus(domain);
         if(serverStatus != null) {
             response.status(200);
             return "AVAILABLE";
         }
-        else if(!CredentialStore.INSTANCE.getDomains().stream().anyMatch(s -> s.getDomain().equals(domain))) {
+        else if(!Database.getInstance().exists(domain)) {
             response.status(404);
             return "INVALID";
         }

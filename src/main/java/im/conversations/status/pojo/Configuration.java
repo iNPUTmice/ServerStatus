@@ -25,7 +25,22 @@ public class Configuration {
     private String primaryDomain;
     private String ip = "127.0.0.1";
     private int port = 4567;
-    private String storagePath = "."+File.separator;
+
+    private String dbUrl;
+    private String dbUsername;
+    private String dbPassword;
+
+    public String getDbUrl() {
+        return dbUrl;
+    }
+
+    public String getDbUsername() {
+        return dbUsername;
+    }
+
+    public String getDbPassword() {
+        return dbPassword;
+    }
 
     private Configuration() {
 
@@ -41,13 +56,6 @@ public class Configuration {
 
     public String getPrimaryDomain() {
         return primaryDomain;
-    }
-    public String getStoragePath() {
-        if (storagePath.endsWith(File.separator)) {
-            return storagePath;
-        } else {
-            return storagePath+File.separator;
-        }
     }
 
     public List<Jid> getAdditionalDomains() {

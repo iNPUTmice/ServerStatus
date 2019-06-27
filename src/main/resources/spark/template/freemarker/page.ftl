@@ -75,7 +75,7 @@
 </head>
 <body>
     <#nested />
-<p class="small">Copyright 2017 <a href="https://gultsch.de">Daniel Gultsch</a> <#if !historical>&middot; <a href="/historical/">Historical data</a></#if> &middot; <a href="https://github.com/iNPUTmice/ServerStatus">Source code</a></p>
+<p class="small">Copyright 2017-2019 <a href="https://gultsch.de">Daniel Gultsch</a> <#if !historical>&middot; <a href="/historical/">Historical data</a></#if> &middot; <a href="https://github.com/iNPUTmice/ServerStatus">Source code</a></p>
 </body>
 </html>
 </#macro>

@@ -1,8 +1,7 @@
 package im.conversations.status.xmpp;
 
 import im.conversations.status.network.NetworkAvailability;
-import im.conversations.status.persistence.CredentialStore;
-import im.conversations.status.persistence.ServerStatusStore;
+import im.conversations.status.persistence.Database;
 import im.conversations.status.persistence.ThreeStrikesStore;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.pojo.PingResult;
@@ -39,7 +38,7 @@ public class ServerStatusChecker implements Runnable {
     @Override
     public void run() {
         try {
-            checkStatus().ifPresent(serverStatus -> ServerStatusStore.INSTANCE.put(credentials.getJid().getDomain(), serverStatus));
+            checkStatus().ifPresent(serverStatus -> Database.getInstance().put(credentials.getJid().getDomain(), serverStatus));
         } catch (Throwable t) {
             LOGGER.error("unexpected problem", t);
         }
@@ -67,7 +66,7 @@ public class ServerStatusChecker implements Runnable {
         } catch (AuthenticationException e) {
             LOGGER.info("Authentication failure while testing " + credentials.getJid().getDomain());
             if (ThreeStrikesStore.INSTANCE.strike(credentials)) {
-                if (CredentialStore.INSTANCE.delete(credentials)) {
+                if (Database.getInstance().delete(credentials)) {
                     LOGGER.info("successfully deleted credentials for " + credentials.getJid() + " after three strikes");
                 }
             }

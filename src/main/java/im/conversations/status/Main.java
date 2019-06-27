@@ -1,7 +1,6 @@
 package im.conversations.status;
 
-import im.conversations.status.persistence.CredentialStore;
-import im.conversations.status.persistence.ServerStatusStore;
+import im.conversations.status.persistence.Database;
 import im.conversations.status.pojo.Configuration;
 import im.conversations.status.pojo.Credentials;
 import im.conversations.status.web.Controller;
@@ -23,7 +22,8 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    private static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(5);
+    private static ScheduledThreadPoolExecutor statusCheckExecutor = new ScheduledThreadPoolExecutor(5);
+    private static ScheduledThreadPoolExecutor historicDataExecutor = new ScheduledThreadPoolExecutor(1);
 
     public static void main(String... args) {
         Options options = new Options();
@@ -64,16 +64,18 @@ public class Main {
         get("/availability/:domain/", Controller.getAvailability);
         get("/reverse/:domain/", Controller.getReverse, templateEngine);
         get("/:domain/", Controller.getStatus, templateEngine);
+        get("/badge/:domain/", Controller.getBadge, templateEngine);
         scheduleStatusCheck();
+        historicDataExecutor.scheduleWithFixedDelay(new Database.HistoricalDataUpdater(), 0, 10, TimeUnit.MINUTES);
+
     }
 
     public static void scheduleStatusCheck() {
-        scheduledThreadPoolExecutor.getQueue().clear();
-        List<Credentials> credentialsList = CredentialStore.INSTANCE.getCredentialsList();
-        List<Jid> pingTargetList = CredentialStore.INSTANCE.getPingTargets();
+        statusCheckExecutor.getQueue().clear();
+        List<Credentials> credentialsList = Database.getInstance().getCredentials();
+        List<Jid> pingTargetList = Database.getInstance().getPingTargets();
         for (Credentials credentials : credentialsList) {
-            scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, pingTargetList), 0, 2, TimeUnit.MINUTES);
+            statusCheckExecutor.scheduleAtFixedRate(new ServerStatusChecker(credentials, pingTargetList), 0, 2, TimeUnit.MINUTES);
         }
-        scheduledThreadPoolExecutor.scheduleAtFixedRate(new ServerStatusStore.HistoricalDataUpdater(), 0, 10, TimeUnit.MINUTES);
     }
 }
