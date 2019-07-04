@@ -13,6 +13,7 @@ import rocks.xmpp.core.XmppException;
 import rocks.xmpp.core.sasl.AuthenticationException;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.session.XmppSessionConfiguration;
+import rocks.xmpp.extensions.caps.EntityCapabilitiesManager;
 import rocks.xmpp.extensions.disco.ServiceDiscoveryManager;
 import rocks.xmpp.extensions.ping.PingManager;
 import rocks.xmpp.im.roster.RosterManager;
@@ -46,12 +47,14 @@ public class ServerStatusChecker implements Runnable {
 
     private Optional<ServerStatus> checkStatus() {
         XmppSessionConfiguration xmppSessionConfiguration = XmppSessionConfiguration.builder()
+                .cacheDirectory(null)
                 .defaultResponseTimeout(Duration.ofSeconds(10))
                 .build();
         try (XmppClient xmppClient = XmppClient.create(credentials.getJid().getDomain(), xmppSessionConfiguration)) {
             xmppClient.connect();
             xmppClient.getManager(RosterManager.class).setRetrieveRosterOnLogin(false);
             xmppClient.getManager(ServiceDiscoveryManager.class).setEnabled(false);
+            xmppClient.getManager(EntityCapabilitiesManager.class).setEnabled(false);
             final PingManager pingManager = xmppClient.getManager(PingManager.class);
             xmppClient.login(credentials.getJid().getLocal(), credentials.getPassword());
             List<PingResult> results = serversToPing.parallelStream()
