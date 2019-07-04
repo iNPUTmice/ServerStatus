@@ -66,7 +66,7 @@ public class Main {
         get("/:domain/", Controller.getStatus, templateEngine);
         get("/badge/:domain/", Controller.getBadge, templateEngine);
         scheduleStatusCheck();
-        historicDataExecutor.scheduleWithFixedDelay(new Database.HistoricalDataUpdater(), 0, 10, TimeUnit.MINUTES);
+        historicDataExecutor.scheduleWithFixedDelay(new HistoricalDataUpdater(), 0, 10, TimeUnit.MINUTES);
 
     }
 

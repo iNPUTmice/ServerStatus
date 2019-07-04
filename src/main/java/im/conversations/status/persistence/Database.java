@@ -76,13 +76,13 @@ public class Database {
         return true;
     }
 
-    private void put(String server, HistoricalLoginStatus historicalLoginStatuus) {
+    public void put(String server, HistoricalLoginStatus historicalLoginStatuus) {
         synchronized (serverHistoricalLoginStatusMap) {
             serverHistoricalLoginStatusMap.put(server, historicalLoginStatuus);
         }
     }
 
-    private double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
+    public double getHistoricalLoginStatus(String server, Duration duration) throws HistoricalDataNotAvailableException {
         try (Connection connection = this.database.open()) {
             final Instant start = Instant.now().minus(duration);
             final boolean exists = connection.createQuery("select exists(SELECT status FROM login_status WHERE server=:server and timestamp < :start)")
@@ -113,7 +113,7 @@ public class Database {
         }
     }
 
-    private void discardExpired() {
+    public void discardExpired() {
         try (Connection connection = this.database.open()) {
             connection.createQuery("delete from login_status where timestamp < :timestamp")
                     .addParameter("timestamp", Instant.now().minus(Duration.ofDays(366)))
@@ -198,36 +198,6 @@ public class Database {
                     })
                     .sorted(Comparator.comparing(PingResult::getServer))
                     .collect(Collectors.toList());
-        }
-    }
-
-    public static class HistoricalDataUpdater implements Runnable {
-
-        private static final Logger LOGGER = LoggerFactory.getLogger(HistoricalDataUpdater.class);
-
-        @Override
-        public void run() {
-            final Instant start = Instant.now();
-            Database.getInstance().discardExpired();
-            final List<String> domains = Database.getInstance().getDomains();
-            for (final String domain : domains) {
-                final HistoricalLoginStatus status = create(domain);
-                INSTANCE.put(domain, status);
-            }
-            LOGGER.info("calculated historic data for " + domains.size() + " domains in " + Duration.between(start, Instant.now()));
-        }
-
-        private HistoricalLoginStatus create(String server) {
-            final Map<Duration, Double> map = new HashMap<>();
-            for (int d : HistoricalLoginStatus.DURATIONS) {
-                try {
-                    final Duration duration = Duration.of(d, HistoricalLoginStatus.UNIT);
-                    map.put(duration, INSTANCE.getHistoricalLoginStatus(server, duration));
-                } catch (HistoricalDataNotAvailableException e) {
-                    //ignore information not available
-                }
-            }
-            return new HistoricalLoginStatus(map);
         }
     }
 
