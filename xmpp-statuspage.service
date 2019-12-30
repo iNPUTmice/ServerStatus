@@ -1,0 +1,12 @@
+[Unit]
+Description=XMPP Status Page
+After=prosody.service
+
+[Service]
+User=statuspage
+Group=statuspage
+ExecStart=/usr/bin/java -jar target/ServerStatus.jar
+WorkingDirectory=</path/to/statuspage/git/clone>
+
+[Install]
+WantedBy=multi-user.target
