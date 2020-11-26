@@ -16,6 +16,7 @@
         width: 300px;
         font-size: 0.9em;
         background: none;
+        color: black;
         text-decoration: none;
         outline: none !important;
         border: none;
