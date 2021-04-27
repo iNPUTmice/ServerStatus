@@ -46,6 +46,20 @@
       -o-transition: all 0.3s;
       transition: all 0.3s;
     }
+       @media only screen and (max-width: 500px) {
+        input {
+           width: 170px;
+            font-size: 0.85em;
+        }
+        label {
+            width: 65px;
+            font-size: 0.85em;
+            margin-right: 5px;
+        }
+        #form_button {
+            margin-left: 50px;
+        }
+    }
 </style>
 <h1>Add credentials for your server</h1>
 <form action="/add/" method="post">
