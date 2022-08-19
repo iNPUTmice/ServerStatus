@@ -21,3 +21,15 @@ cp config.example.json config.json
 java -jar target/ServerStatus.jar -c /path/to/config.json
 ```
 
+Run it in the background
+------------------------
+
+You can run the status page as a web service like so: Clone the repo to a location that is accessible to your web server user, e.g. /var/www/html/status.domain.tld. Create a separate system user and adjust permissions. Point your web server configuration to the new location.
+```
+useradd -d /var/www/html/status.domain.tld/ -r statuspage
+chown -R statuspage:www-data /var/www/html/status.domain.tld/
+mv xmpp-statuspage.service /etc/systemd/systemd
+systemctl daemon-reload
+systemctl enable xmpp-statuspage.service
+systemctl start xmpp-statuspage.service
+```
